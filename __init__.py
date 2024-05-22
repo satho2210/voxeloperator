@@ -1,7 +1,5 @@
-
 import fiftyone.operators as foo
-import fiftyone.operators.types as types 
- 
+import fiftyone.operators.types as types
 
 class AddNoteOperator(foo.Operator):
     @property
@@ -9,7 +7,7 @@ class AddNoteOperator(foo.Operator):
         return foo.OperatorConfig(
             name="add_note_operator",
             label="Add Note",
-            description="Add a note to the sample",
+            description="Eine Notiz zum Sample hinzufügen",
             dynamic=False,
             execute_as_generator=False,
             unlisted=False,
@@ -23,20 +21,36 @@ class AddNoteOperator(foo.Operator):
 
     def resolve_input(self, ctx):
         inputs = types.Object()
-        inputs.str("note", label="Note", description="Enter your note")
+        inputs.str("note", label="Notiz", description="Geben Sie Ihre Notiz ein")
         return types.Property(inputs)
 
     def execute(self, ctx):
-        note = ctx.params["note"]
-        sample = ctx.sample
-        sample["notes"].append(note)
+        import logging
+        logging.basicConfig(level=logging.DEBUG)
+        
+        note = ctx.params.get("note")
+        if note is None:
+            raise ValueError("Keine Notiz angegeben")
+
+        # Debugging: Logge die Kontextattribute, um das Sample zu finden
+        logging.debug(f"Kontextattribute: {dir(ctx)}")
+        
+        # Annahme, dass das Sample in ctx.view ist, falls ctx.sample nicht verfügbar ist
+        if hasattr(ctx, 'sample'):
+            sample = ctx.sample
+        elif hasattr(ctx, 'view'):
+            sample = ctx.view.first()  # Annahme, dass Sie das erste Sample in der Ansicht möchten
+        else:
+            raise AttributeError("Kein Sample oder View im Kontext gefunden")
+
+        if 'notes' not in sample:
+            sample['notes'] = []
+        sample['notes'].append(note)
         sample.save()
         return {"note_added": note}
 
 def register(p):
-    """Always implement this method and register() each operator that your
-    plugin defines.
+    """Implementieren Sie immer diese Methode und registrieren Sie jeden Operator,
+    den Ihr Plugin definiert.
     """
     p.register(AddNoteOperator)
- 
- 
